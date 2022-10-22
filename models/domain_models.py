@@ -3,8 +3,10 @@ from datetime import date
 from typing import Optional, List
 
 
-@dataclass(frozen=True)
-# frozen == immutable, немутируемый, то есть не можем менять значение после инициализации
+@dataclass(unsafe_hash=True)
+# frozen == immutable, немутируемый, то есть не можем менять значение после инициализации,
+# unsafe_hash - добавляем неявный метод __hash__
+# Наличие __hash__() означает, что сущности класса неизменны.
 class OrderLine:
     """
     Модель товарной позиции (то, что заказывают)
@@ -25,7 +27,7 @@ class Batch:
         self.sku = sku # stock-keeping unit, артикул
         self.eta = eta  # estimated-time-arrived, ожидаемое время прибытия
         self._allocations = set()  # храним OrderLine
-        self._purchased_quantity = qty  #
+        self._purchased_quantity = qty
 
     def __eq__(self, other):
         """
