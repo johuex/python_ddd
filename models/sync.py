@@ -2,9 +2,15 @@ import hashlib
 import os
 import shutil
 from pathlib import Path
+from typing import List, Any, Dict
 
 BLOCKSIZE = 65536
+
+
 def hash_file(path):
+    """
+    Получаем hash файла
+    """
     hasher = hashlib.sha1()
     with path.open("rb") as file:
         buf = file.read(BLOCKSIZE)
@@ -13,31 +19,51 @@ def hash_file(path):
             buf = file.read(BLOCKSIZE)
     return hasher.hexdigest()
 
-def sync(source, dest):
-# Обойти исходную папку и создать словарь имен и их хешей
-    source_hashes = {}
-    for folder, _, files in os.walk(source):
-        for fn in files:
-            source_hashes[hash_file(Path(folder) / fn)] = fn
-    seen = set() # отслеживать файлы, найденные в целевой папке
 
-# Обойти целевую папку и получить имена файлов и хеши
-    for folder, _, files in os.walk(dest):
+def read_paths_and_hashes(root):
+    """
+    Читаем содержимое директории и считаем hash файла
+    """
+    hashes = {}
+    for folder, _, files in os.walk(root):
         for fn in files:
-            dest_path = Path(folder) / fn
-            dest_hash = hash_file(dest_path)
-            seen.add(dest_hash)
-        # если в целевой папке есть файл, которого нет
-        # в источнике, то удалить его
-            if dest_hash not in source_hashes:
-                dest_path.remove()
-            # если в целевой папке есть файл, который имеет другой
-            # путь в источнике, то переместить его в правильный путь
-            elif dest_hash in source_hashes and fn != source_hashes[dest_hash]:
-                shutil.move(dest_path, Path(folder) / source_hashes[dest_hash])
+            hashes[hash_file(Path(folder) / fn)] = fn
+    return hashes
 
-    # каждый файл, который появляется в источнике, но не в месте
-    # назначения, скопировать в целевую папку
-    for src_hash, fn in source_hashes.items():
-        if src_hash not in seen:
-            shutil.copy(Path(source) / fn, Path(dest) / fn)
+
+def determine_actions(src_hashes, dst_hashes, src_folder, dst_folder):
+    """
+    Возвращаем абстрактные операции, которые нужно выполнить для синхронизации
+    """
+    for sha, filename in src_hashes.items():
+        if sha not in dst_hashes:
+            sourcepath = Path(src_folder) / filename
+            destpath = Path(dst_folder) / filename
+            yield 'copy', sourcepath, destpath
+        elif dst_hashes[sha] != filename:
+            olddestpath = Path(dst_folder) / dst_hashes[sha]
+            newdestpath = Path(dst_folder) / filename
+            yield 'move', olddestpath, newdestpath
+    for sha, filename in dst_hashes.items():
+        if sha not in src_hashes:
+            yield 'delete', dst_folder / filename
+
+
+def sync(source: Dict[str, Any], dest: Dict[str, Any]):
+    # шаг 1 с императивным ядром: собрать входные данные
+    # изолируем операции связанные с I/O
+    source_hashes = read_paths_and_hashes(source)
+    dest_hashes = read_paths_and_hashes(dest)
+
+    # шаг 2: вызвать функциональное ядро
+    # тут у нас бизнес-логика
+    actions = determine_actions(source_hashes, dest_hashes, source, dest)
+
+    # шаг 3 с императивным ядром: применить операции ввода-вывода данных
+    for action, *paths in actions:
+        if action == 'copy':
+            shutil.copyfile(*paths)
+        if action == 'move':
+            shutil.move(*paths)
+        if action == 'delete':
+            os.remove(paths[0])
