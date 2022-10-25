@@ -49,7 +49,10 @@ def determine_actions(src_hashes, dst_hashes, src_folder, dst_folder):
             yield 'delete', dst_folder / filename
 
 
-def sync(source: Dict[str, Any], dest: Dict[str, Any]):
+def sync_1(source: Dict[str, Any], dest: Dict[str, Any]):
+    """
+    Sync, разбитая логически на три части. Каждую из этих частей по отдельности можно проверить в тестах
+    """
     # шаг 1 с императивным ядром: собрать входные данные
     # изолируем операции связанные с I/O
     source_hashes = read_paths_and_hashes(source)
@@ -67,3 +70,36 @@ def sync(source: Dict[str, Any], dest: Dict[str, Any]):
             shutil.move(*paths)
         if action == 'delete':
             os.remove(paths[0])
+
+
+def sync_2(reader, filesystem, source_root, dest_root):
+    """
+    Функция sync без разделения, но с вынесением явных зависимостей за пределы функции (reader и filesystem)
+    """
+    source_hashes = reader(source_root)  # В reader создается словарь с файлами
+    dest_hashes = reader(dest_root)
+    for sha, filename in source_hashes.items():
+        if sha not in dest_hashes:
+            sourcepath = f"{source_root}/{filename}"
+            destpath = f"{dest_root}/{filename}"
+            filesystem.copy(sourcepath, destpath)  # применяем обнаруженные изменения
+        elif dest_hashes[sha] != filename:
+            olddestpath = f"{dest_root}/{dest_hashes[sha]}"
+            newdestpath = f"{dest_root}/{filename}"
+            filesystem.move(olddestpath, newdestpath)
+
+    for sha, filename in dest_hashes.items():
+        if sha not in source_hashes:
+            filesystem.delete(dest_root/filename)
+
+
+class FakeFileSystem(list):
+    """для тестов edge-to-edge"""
+    def copy(self, src, dest):
+        self.append(('COPY', src, dest))
+
+    def move(self, src, dest):
+        self.append(('MOVE', src, dest))
+
+    def delete(self, src):
+        self.append(('DELETE', src))

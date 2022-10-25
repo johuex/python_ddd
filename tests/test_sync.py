@@ -1,9 +1,12 @@
 from pathlib import Path
 
-from models.sync import determine_actions
+from models.sync import determine_actions, FakeFileSystem, sync_2
 
 
 class TestSyncFiles:
+    """
+    Проверяем sync_1
+    """
     # было
     """def test_when_a_file_exists_in_the_source_but_not_the_destination(self):
         "
@@ -60,3 +63,37 @@ class TestSyncFiles:
         dst_hashes = {'hash1': 'fn2'}
         actions = determine_actions(src_hashes, dst_hashes, Path('/src'), Path('/dst'))
         assert list(actions) == [('move', Path('/dst/fn2'), Path('/dst/fn1'))]
+
+
+class TestSyncFilesEdgeToEdge:
+    """
+    Тесты по принципу от края до края
+    """
+    def test_when_a_file_exists_in_the_source_but_not_the_destination(self):
+        """
+        1. Создаем файл в source
+        2. Синхронизируем через sync_2
+        ОР: получаем команду COPY
+        """
+        source = {"sha1": "my-file"}
+        dest = {}
+
+        filesystem = FakeFileSystem()
+        reader = {"/source": source, "/dest": dest}
+        sync_2(reader.pop, filesystem, "/source", "/dest")
+        assert filesystem == [("COPY", "/source/my-file", "/dest/my-file")]
+
+    def test_when_a_file_has_been_renamed_in_the_source(self):
+        """
+        1. Создаем файл в source
+        2. Создаем такой же файл в dest, но с другим названием
+        3. Синхронизируем через sync_2
+        ОР: получаем команду MOVE
+        """
+        source = {"sha1": "renamed-file"}
+        dest = {"sha1": "original-file"}
+
+        filesystem = FakeFileSystem()
+        reader = {"/source": source, "/dest": dest}
+        sync_2(reader.pop, filesystem, "/source", "/dest")
+        assert filesystem == [("MOVE", "/dest/original-file", "/dest/renamed-file")]
