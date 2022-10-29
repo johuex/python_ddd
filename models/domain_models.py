@@ -81,7 +81,8 @@ class OutOfStock(Exception):
 
 def allocate(line: OrderLine, batches: List[Batch]) -> str:
     """
-    Автономная функция для службы предметной области
+    Автономная функция для службы предметной области;
+    Служба предметной области
     """
     try:
         batch = next(
