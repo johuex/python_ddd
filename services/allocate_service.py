@@ -19,6 +19,9 @@ class InvalidSku(Exception):
 
 
 def is_valid_sku(sku, batches):
+    """
+    Check if line.sku exists in some batch
+    """
     return sku in {b.sku for b in batches}
 
 
@@ -32,5 +35,14 @@ def allocate(line: OrderLine, repo: AbstractRepository, session) -> str:
     if not is_valid_sku(line.sku, batches):
         raise InvalidSku(line.sku)
     batchref = domain_models.allocate(line, batches)
+    session.commit()
+    return batchref
+
+
+def deallocate(line: OrderLine, repo: AbstractRepository, session) -> str:
+    batches = repo.list()
+    if not is_valid_sku(line.sku, batches):
+        raise InvalidSku(line.sku)
+    batchref = domain_models.deallocate(line, batches)
     session.commit()
     return batchref

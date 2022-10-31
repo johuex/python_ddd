@@ -9,3 +9,11 @@ class POSTAllocateRequest(OrderLine):
 
 class POSTAllocateResponse(BaseModel):
     batchref: str
+
+
+class DELETEAllocateRequest(OrderLine):
+    pass
+
+
+class DELETEAllocateResponse(BaseModel):
+    batchref: str
