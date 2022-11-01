@@ -3,7 +3,7 @@ E2E (сквозные) тесты для API
 """
 import requests
 
-import config
+from services import config
 from helpers.utils import random_sku, random_batchref, random_orderid
 
 

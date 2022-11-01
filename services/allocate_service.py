@@ -5,7 +5,7 @@ from __future__ import annotations  # TODO узнать для чего это
 
 from models import domain_models
 from models.domain_models import OrderLine
-from repository import AbstractRepository
+from services.repository import AbstractRepository
 
 
 class InvalidSku(Exception):

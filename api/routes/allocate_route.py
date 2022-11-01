@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException
 
-import repository
 from api.main import get_session
 from models.api_models.assertion_api_models import (
     POSTAllocateResponse,
@@ -8,7 +7,7 @@ from models.api_models.assertion_api_models import (
     DELETEAllocateResponse,
     DELETEAllocateRequest
 )
-from services import allocate_service
+from services import allocate_service, repository
 from models import domain_models
 
 

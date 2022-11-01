@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-import repository
+from services import repository
 from models import domain_models
 
 

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-import config
+from services import config
 from api.routes.main import api_router
 from models import orm_models
 
