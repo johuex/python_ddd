@@ -9,7 +9,7 @@ def make_batch_and_line(sku, batch_qty, line_qty):
     )
 
 
-class TestBatches:
+class TestAllocateBatches:
     def test_allocating_to_a_batch_reduces_the_available_quantity(self):
         """
         1. Создаем партию на 20 штук
@@ -88,3 +88,32 @@ class TestBatches:
         batch.allocate(line)
         batch.allocate(line)
         assert batch.available_quantity == 18
+
+
+class TestDeallocateBatches:
+
+    def test_deallocation_exist_line_in_batch_return_true(self):
+        """
+        1. Создадим партию
+        2. Создаем товарную позицию
+        3. Размещаем товарную позицию в партии
+        4. Отменяем товарную позицию в партии
+        ОР: Кол-во доступных товаров в партии вернулось в изначальное значение
+        """
+        batch, line = make_batch_and_line("ANGULAR-DESK", 20, 2)
+        batch.allocate(line)
+        assert batch.available_quantity == 18
+        batch.deallocate(line)
+        assert batch.available_quantity == 20
+
+    def test_deallocate_non_exist_line_in_batch_return_false(self):
+        """
+        1. Создадим партию
+        2. Создаем товарную позицию
+        3. Пытаемся отменить неразмещенную товарную позицию в партии
+        ОР: кол-во товара в партии не изменится
+        """
+        batch, line = make_batch_and_line("ANGULAR-DESK", 20, 2)
+        assert batch.available_quantity == 20
+        batch.deallocate(line)
+        assert batch.available_quantity == 20

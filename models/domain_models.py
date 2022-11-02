@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Optional, List
 
+from models.exceptions import NoOrderInBatch, OutOfStock
+
 
 @dataclass(unsafe_hash=True)
 # frozen == immutable, немутируемый, то есть не можем менять значение после инициализации,
@@ -66,21 +68,16 @@ class Batch:
     def can_allocate(self, line: OrderLine) -> bool:
         return self.sku == line.sku and self.available_quantity >= line.qty
 
+    def can_deallocate(self, line: OrderLine):
+        return line in self._allocations
+
     def allocate(self, line: OrderLine):
         if self.can_allocate(line):
             self._allocations.add(line)
 
     def deallocate(self, line: OrderLine):
-        if line in self._allocations:
+        if self.can_deallocate:
             self._allocations.remove(line)
-
-
-class OutOfStock(Exception):
-    pass
-
-
-class NoOrderInBatch(Exception):
-    pass
 
 
 def allocate(line: OrderLine, batches: List[Batch]) -> str:
@@ -101,9 +98,9 @@ def allocate(line: OrderLine, batches: List[Batch]) -> str:
 def deallocate(line: OrderLine, batches: List[Batch]) -> str:
     try:
         batch = next(
-            b for b in sorted(batches)
+            b for b in sorted(batches) if b.can_deallocate(line)
         )
         batch.deallocate(line)
         return batch.reference
     except StopIteration:
-        raise NoOrderInBatch(f"No order line {line.sku} in batch {batch.sku}")
+        raise NoOrderInBatch(line.orderid, line.sku, [b.sku for b in batches])

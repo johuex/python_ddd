@@ -2,8 +2,8 @@ from datetime import date, timedelta
 
 import pytest
 
-from models.domain_models import allocate, OrderLine, Batch, OutOfStock
-
+from models.domain_models import allocate, OrderLine, Batch, OutOfStock, deallocate
+from models.exceptions import NoOrderInBatch
 
 today = date.today()
 tomorrow = today + timedelta(days=1)
@@ -75,5 +75,66 @@ class TestAllocate:
         """
         batch = Batch('batch1', 'SMALL-FORK', 10, eta=today)
         allocate(OrderLine('order1', 'SMALL-FORK', 10), [batch])
-        with pytest.raises(OutOfStock, match='SMALL-FOR'):  # на что влияет match?
+        with pytest.raises(OutOfStock, match='Out of stock for sku SMALL-FOR'):  # на что влияет match?
             allocate(OrderLine('order2', 'SMALL-FORK', 1), [batch])
+
+
+class TestDeallocate:
+
+    def test_deallocate_line_in_one_batch_return_ok(self):
+        """
+        1. Создаем партию товара
+        2. Создаем товарную позицию
+        3. Размещаем товарную позицию в партии
+        4. Отменяем размещение
+        ОК: размещение отменилось в партии
+        """
+        in_stock_batch = Batch("in-stock-batch", "RETRO-CLOCK", 100, eta=None)
+        line = OrderLine("oref", "RETRO-CLOCK", 10)
+
+        allocate(line, [in_stock_batch])
+        assert in_stock_batch.available_quantity == 90
+
+        deallocate(line, [in_stock_batch])
+        assert in_stock_batch.available_quantity == 100
+
+    def test_deallocate_line_in_one_of_batches_return_ok(self):
+        """
+        1. Создаем несколько партий товара
+        2. Создаем товарную позицию
+        3. Размещаем товарную позицию в партии
+        4. Отменяем размещение
+        ОК: размещение отменилось в верной партии (самой ранней)
+        """
+        in_stock_batch = Batch("in-stock-batch", "RETRO-CLOCK", 100, eta=None)
+        shipment_batch = Batch("shipment-batch", "RETRO-CLOCK", 100, eta=tomorrow)
+        line = OrderLine("oref", "RETRO-CLOCK", 10)
+
+        allocate(line, [in_stock_batch, shipment_batch])
+
+        assert in_stock_batch.available_quantity == 90
+        assert shipment_batch.available_quantity == 100
+
+        deallocate(line, [in_stock_batch, shipment_batch])
+
+        assert in_stock_batch.available_quantity == 100
+        assert shipment_batch.available_quantity == 100
+
+    def test_deallocate_line_in_no_one_of_batches_return_error(self):
+        """
+        1. Создаем несколько партий товара
+        2. Создаем товарную позицию
+        4. Отменяем размещение, которое нигде не размещали
+        ОК: NoOrderInBatch
+        """
+        in_stock_batch = Batch("in-stock-batch", "RETRO-CLOCK", 100, eta=None)
+        shipment_batch = Batch("shipment-batch", "RETRO-CLOCK", 100, eta=tomorrow)
+        line = OrderLine("oref", "RETRO-CLOCK", 10)
+
+        assert in_stock_batch.available_quantity == 100
+        assert shipment_batch.available_quantity == 100
+        with pytest.raises(NoOrderInBatch):
+            deallocate(line, [in_stock_batch, shipment_batch])
+
+        assert in_stock_batch.available_quantity == 100
+        assert shipment_batch.available_quantity == 100

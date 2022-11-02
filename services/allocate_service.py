@@ -5,17 +5,8 @@ from __future__ import annotations  # TODO узнать для чего это
 
 from models import domain_models
 from models.domain_models import OrderLine
+from models.exceptions import InvalidSku
 from services.repository import AbstractRepository
-
-
-class InvalidSku(Exception):
-    def __init__(self, sku: str):
-        self.sku = sku
-        self.message = 'Недопустимый артикул: {}'
-        super().__init__(self.message)
-
-    def __str__(self):
-        return self.message.format(self.sku)
 
 
 def is_valid_sku(sku, batches):
