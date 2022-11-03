@@ -6,7 +6,7 @@ from __future__ import annotations  # TODO узнать для чего это
 from models import domain_models
 from models.domain_models import OrderLine
 from models.exceptions import InvalidSku
-from services.repository import AbstractRepository
+from adapters.repository import AbstractRepository
 
 
 def is_valid_sku(sku, batches):

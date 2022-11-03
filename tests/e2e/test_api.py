@@ -3,7 +3,7 @@ E2E (сквозные) тесты для API
 """
 import requests
 
-from services import config
+import config
 from helpers.utils import random_sku, random_batchref, random_orderid
 
 
@@ -11,7 +11,7 @@ _baseurl = f"{config.get_api_url()}/allocate"
 
 
 class TestApiPostAllocation:
-    """allocate line to batch by api tests"""
+    """allocate line to batch by entrypoints tests"""
     def test_happy_path_returns_200_and_allocated_batch(self, add_stock):
         """
         1. Создаем три партии + записываем их в БД
@@ -54,7 +54,7 @@ class TestApiPostAllocation:
 
 
 class TestApiDeleteAllocation:
-    """deallocate line to batch by api tests"""
+    """deallocate line to batch by entrypoints tests"""
 
     def test_happy_path_returns_200_and_deallocated_batch(self, add_stock):
         """

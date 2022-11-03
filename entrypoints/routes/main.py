@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from api.routes import allocate_route
+from entrypoints.routes import allocate_route
 
 api_router = APIRouter()
 

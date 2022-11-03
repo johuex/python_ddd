@@ -1,13 +1,14 @@
 from fastapi import APIRouter, HTTPException
 
-from api.main import get_session
+from entrypoints.main import get_session
 from models.api_models.assertion_api_models import (
     POSTAllocateResponse,
     POSTAllocateRequest,
     DELETEAllocateResponse,
     DELETEAllocateRequest
 )
-from services import allocate_service, repository
+from services import allocate_service
+from adapters import repository
 from models import domain_models
 
 
