@@ -1,5 +1,5 @@
 """
-Здесь будут лежать функции службы
+Здесь будут лежать функции службы (de-)allocate
 """
 from __future__ import annotations  # TODO узнать для чего это
 
@@ -16,12 +16,13 @@ def is_valid_sku(sku, batches):
     return sku in {b.sku for b in batches}
 
 
-def allocate(line: OrderLine, repo: AbstractRepository, session) -> str:
+def allocate(orderid: str, sku: str, qty: int, repo: AbstractRepository, session) -> str:
     """
     repo: AbstractRepository позволяет использовать как FakeRepository, так и SqlAlchemyRepository,
     то есть зависим от абстракции из принципа инверсии зависимости;
     эта функция сервисного слоя соединяет API и службу предметной области
     """
+    line = OrderLine(orderid, sku, qty)
     batches = repo.list()
     if not is_valid_sku(line.sku, batches):
         raise InvalidSku(line.sku)
@@ -30,7 +31,8 @@ def allocate(line: OrderLine, repo: AbstractRepository, session) -> str:
     return batchref
 
 
-def deallocate(line: OrderLine, repo: AbstractRepository, session) -> str:
+def deallocate(orderid: str, sku: str, qty: int, repo: AbstractRepository, session) -> str:
+    line = OrderLine(orderid, sku, qty)
     batches = repo.list()
     if not is_valid_sku(line.sku, batches):
         raise InvalidSku(line.sku)
