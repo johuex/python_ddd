@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Optional, List
 
-from models.exceptions import NoOrderInBatch, OutOfStock
+from src.allocation.models.exceptions import NoOrderInBatch, OutOfStock
 
 
 @dataclass(unsafe_hash=True)
@@ -30,6 +30,9 @@ class Batch:
         self.eta = eta  # estimated-time-arrived, ожидаемое время прибытия
         self._allocations = set()  # храним OrderLine
         self._purchased_quantity = qty
+
+    def __repr__(self):
+        return f"<Batch {self.reference}>"
 
     def __eq__(self, other):
         """

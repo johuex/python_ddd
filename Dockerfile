@@ -1,10 +1,10 @@
 FROM python:3.11-slim
 
 WORKDIR /code
-COPY entrypoints api
-COPY helpers helpers
-COPY models models
-COPY service_layer services
+COPY src/allocation/entrypoints api
+COPY src/allocation/helpers helpers
+COPY src/allocation/models models
+COPY src/allocation/service_layer services
 COPY ./requirements.txt .
 
 RUN pip install -r requirements.txt

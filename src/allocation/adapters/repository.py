@@ -3,7 +3,7 @@ import abc
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from models import domain_models
+from src.allocation.models import domain_models
 
 
 class AbstractRepository(abc.ABC):
@@ -34,4 +34,9 @@ class SqlAlchemyRepository(AbstractRepository):
             select(domain_models.Batch).where(domain_models.Batch.reference == reference)
         ).scalar_one_or_none()
 
+        return res
+
+    def list(self):
+        res_ = self.session.execute(select(domain_models.Batch)).fetchall()
+        res = [i[0] for i in res_]  # from raw to model
         return res

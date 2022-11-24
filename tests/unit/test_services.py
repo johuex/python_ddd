@@ -1,7 +1,8 @@
 import pytest
-from models import domain_models, exceptions
-from service_layer import allocate_service, batch_service
-from adapters import repository
+from src.allocation.models import exceptions
+from src.allocation.service_layer import allocate_service, unit_of_work
+from src.allocation.service_layer import batch_service
+from src.allocation.adapters import repository
 
 
 class FakeRepository(repository.AbstractRepository):
@@ -18,11 +19,16 @@ class FakeRepository(repository.AbstractRepository):
         return list(self._batches)
 
 
-class FakeSession:
-    committed = False
+class FakeUnitOfWork(unit_of_work.AbstractUnitOfWork):
+    def __init__(self):
+        self.batches = FakeRepository([])  # collaboration of ouw and repo
+        self.committed = False
 
     def commit(self):
         self.committed = True
+
+    def rollback(self):
+        pass
 
 
 class TestServiceAllocation:
@@ -31,10 +37,10 @@ class TestServiceAllocation:
         1. Размещаем партию через сервисный слой
         ОР: партия размещена в БД
         """
-        repo, session = FakeRepository([]), FakeSession()
-        batch_service.add_batch("b1", "CRUNCHY-ARMCHAIR", 100, None, repo, session)
-        assert repo.get("b1") is not None
-        assert session.committed
+        uow = FakeUnitOfWork()
+        batch_service.add_batch("b1", "CRUNCHY-ARMCHAIR", 100, None, uow)
+        assert uow.batches.get("b1") is not None
+        assert uow.committed
 
     def test_allocate_returns_allocation(self):
         """
@@ -42,9 +48,9 @@ class TestServiceAllocation:
         2. Размещаем в партии товарную позицию через сервисный слой
         ОР: товарная позиция разместилась в партии
         """
-        repo, session = FakeRepository([]), FakeSession()
-        batch_service.add_batch("batch1", "COMPLICATED-LAMP", 100, None, repo, session)
-        result = allocate_service.allocate("o1", "COMPLICATED-LAMP", 10, repo, session)
+        uow = FakeUnitOfWork()
+        batch_service.add_batch("batch1", "COMPLICATED-LAMP", 100, None, uow)
+        result = allocate_service.allocate("o1", "COMPLICATED-LAMP", 10, uow)
         assert result == "batch1"
 
     def test_allocate_errors_for_invalid_sku(self):
@@ -53,11 +59,11 @@ class TestServiceAllocation:
         2. Пробуем разместить в партии товарную позицию с другим артикулом через сервисный слой
         ОР: Invalid sku NONEXISTENTSKU, товарная позиция не разместилась в партии
         """
-        repo, session = FakeRepository([]), FakeSession()
-        batch_service.add_batch("b1", "AREALSKU", 100, None, repo, session)
+        uow = FakeUnitOfWork()
+        batch_service.add_batch("b1", "AREALSKU", 100, None, uow)
 
         with pytest.raises(allocate_service.InvalidSku, match="Invalid stock-keeping: NONEXISTENTSKU"):
-            allocate_service.allocate("o1", "NONEXISTENTSKU", 10, repo, FakeSession())
+            allocate_service.allocate("o1", "NONEXISTENTSKU", 10, uow)
 
     def test_commits(self):
         """
@@ -65,10 +71,10 @@ class TestServiceAllocation:
         2. Размещаем в партии товарную позицию через сервисный слой
         ОР: товарная позиция разместилась в партии, изменения committed в сессии
         """
-        repo, session = FakeRepository([]), FakeSession()
-        batch_service.add_batch("b1", "OMINOUS-MIRROR", 100, None, repo, session)
-        allocate_service.allocate("o1", "OMINOUS-MIRROR", 10, repo, session)
-        assert session.committed is True
+        uow = FakeUnitOfWork()
+        batch_service.add_batch("b1", "OMINOUS-MIRROR", 100, None, uow)
+        allocate_service.allocate("o1", "OMINOUS-MIRROR", 10, uow)
+        assert uow.committed is True
 
 
 class TestServiceDeallocation:
@@ -79,12 +85,12 @@ class TestServiceDeallocation:
         3. Отменяем размещение партии через сервисный слой
         ОР: данные из сервисного слоя совпадают с ожидаемым
         """
-        repo, session = FakeRepository([]), FakeSession()
-        batch_service.add_batch("b1", "COMPLICATED-LAMP", 100, None, repo, session)
-        result = allocate_service.allocate("o1", "COMPLICATED-LAMP", 10, repo, session)
+        uow = FakeUnitOfWork()
+        batch_service.add_batch("b1", "COMPLICATED-LAMP", 100, None, uow)
+        result = allocate_service.allocate("o1", "COMPLICATED-LAMP", 10, uow)
 
         assert result == "b1"
-        result_2 = allocate_service.deallocate("o1", "COMPLICATED-LAMP", 10, repo, session)
+        result_2 = allocate_service.deallocate("o1", "COMPLICATED-LAMP", 10, uow)
         assert result_2 == "b1"
 
     def test_error_for_invalid_sku_allocation(self):
@@ -94,12 +100,12 @@ class TestServiceDeallocation:
         3. Отменяем товарную позицию с другим артикулом
         ОР: получаем ошибку, что нет такой партии
         """
-        repo, session = FakeRepository([]), FakeSession()
-        batch_service.add_batch("b1", "COMPLICATED-LAMP", 100, None, repo, session)
+        uow = FakeUnitOfWork()
+        batch_service.add_batch("b1", "COMPLICATED-LAMP", 100, None, uow)
         with pytest.raises(exceptions.InvalidSku, match="Invalid stock-keeping: NONEXISTENTSKU"):
-            allocate_service.deallocate("o1", "NONEXISTENTSKU", 10, repo, session)
+            allocate_service.deallocate("o1", "NONEXISTENTSKU", 10, uow)
         with pytest.raises(
                 exceptions.NoOrderInBatch,
                 #match=f"No order line o1:COMPLICATED-LAMP in batches ['COMPLICATED-LAMP']"
         ):
-            allocate_service.deallocate("o1", "COMPLICATED-LAMP", 10, repo, session)
+            allocate_service.deallocate("o1", "COMPLICATED-LAMP", 10, uow)

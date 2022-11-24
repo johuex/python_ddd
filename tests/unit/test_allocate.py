@@ -2,8 +2,8 @@ from datetime import date, timedelta
 
 import pytest
 
-from models.domain_models import allocate, OrderLine, Batch, OutOfStock, deallocate
-from models.exceptions import NoOrderInBatch
+from src.allocation.models.domain_models import allocate, OrderLine, Batch, OutOfStock, deallocate
+from src.allocation.models.exceptions import NoOrderInBatch
 
 today = date.today()
 tomorrow = today + timedelta(days=1)

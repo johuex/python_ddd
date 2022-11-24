@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from models.domain_models import OrderLine, Batch
+from src.allocation.models.domain_models import OrderLine
 
 
 class POSTAllocateRequest(OrderLine):

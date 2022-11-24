@@ -2,9 +2,9 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, clear_mappers
 
-import config
-from helpers.utils import wait_for_postgres_to_come_up
-from adapters.orm import metadata, start_mappers
+from src.allocation import config
+from src.allocation.helpers.utils import wait_for_postgres_to_come_up
+from src.allocation.adapters.orm import metadata, start_mappers
 
 
 @pytest.fixture

@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
-from adapters import repository
-from models import domain_models
+from src.allocation.adapters import repository
+from src.allocation.models import domain_models
 
 
 def insert_order_line(session: Session) -> str:

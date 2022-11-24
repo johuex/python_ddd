@@ -1,4 +1,4 @@
-from models import domain_models
+from src.allocation.models import domain_models
 
 
 class TestOrm:

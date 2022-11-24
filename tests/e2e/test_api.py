@@ -5,8 +5,8 @@ from typing import Any
 
 import requests
 
-import config
-from helpers.utils import random_sku, random_batchref, random_orderid
+from src.allocation import config
+from src.allocation.helpers.utils import random_sku, random_batchref, random_orderid
 
 
 _baseurl = f"{config.get_api_url()}/allocate"
