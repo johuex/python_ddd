@@ -4,13 +4,13 @@ from src.allocation.models.domain_models import Batch, OrderLine
 
 def make_batch_and_line(sku, batch_qty, line_qty):
     return (
-    Batch("batch-001", sku, batch_qty, eta=date.today()),
-    OrderLine("order-123", sku, line_qty)
+        Batch("batch-001", sku, batch_qty, eta=date.today()),
+        OrderLine("order-123", sku, line_qty)
     )
 
 
 class TestAllocateBatches:
-    def test_allocating_to_a_batch_reduces_the_available_quantity(self):
+    def test_allocating_to_a_batch_reduces_the_available_quantity_returns_ok(self):
         """
         1. Создаем партию на 20 штук
         2. Создаем товарную позицию на 2 шт
@@ -22,7 +22,7 @@ class TestAllocateBatches:
         batch.allocate(line)
         assert batch.available_quantity == 18
 
-    def test_can_allocate_if_available_greater_than_required(self):
+    def test_can_allocate_if_available_greater_than_required_returns_ok(self):
         """
         1. Создаем партию на 20 штук
         2. Создаем товарную позицию на 2 шт
@@ -32,7 +32,7 @@ class TestAllocateBatches:
         large_batch, small_line = make_batch_and_line("ELEGANT-LAMP", 20, 2)
         assert large_batch.can_allocate(small_line)
 
-    def test_cannot_allocate_if_available_smaller_than_required(self):
+    def test_cannot_allocate_if_available_smaller_than_required_returns_ok(self):
         """
         1. Создаем партию на 2 штук
         2. Создаем товарную позицию на 20 шт
@@ -42,7 +42,7 @@ class TestAllocateBatches:
         small_batch, large_line = make_batch_and_line("ELEGANT-LAMP", 2, 20)
         assert not small_batch.can_allocate(large_line)
 
-    def test_can_allocate_if_available_equal_to_required(self):
+    def test_can_allocate_if_available_equal_to_required_returns_ok(self):
         """
         1. Создаем партию на 2 штук
         2. Создаем товарную позицию на 2 шт
@@ -52,7 +52,7 @@ class TestAllocateBatches:
         batch, line = make_batch_and_line("ELEGANT-LAMP", 2, 2)
         assert batch.can_allocate(line)
 
-    def test_cannot_allocate_if_skus_do_not_match(self):
+    def test_cannot_allocate_if_skus_do_not_match_returns_error(self):
         """
         1. Создаем партию на 100 штук с артикулем UNCOMFORTABLE-CHAIR
         2. Создаем товарную позицию на 10 шт с артикулем EXPENSIVE-TOASTER
@@ -63,7 +63,7 @@ class TestAllocateBatches:
         different_sku_line = OrderLine("order-123", "EXPENSIVE-TOASTER", 10)
         assert not batch.can_allocate(different_sku_line)
 
-    def test_can_only_deallocate_allocated_lines(self):
+    def test_can_only_deallocate_allocated_lines_returns_ok(self):
         """
         1. Создаем партию на 20 штук
         2. Создаем товарную позицию на 2 шт
@@ -75,7 +75,7 @@ class TestAllocateBatches:
         batch.deallocate(unallocated_line)
         assert batch.available_quantity == 20
 
-    def test_allocation_is_idempotent(self):
+    def test_allocation_is_idempotent_returns_ok(self):
         """
         1. Создаем партию на 20 штук
         2. Создаем товарную позицию на 2 шт
@@ -91,8 +91,7 @@ class TestAllocateBatches:
 
 
 class TestDeallocateBatches:
-
-    def test_deallocation_exist_line_in_batch_return_true(self):
+    def test_deallocation_exist_line_in_batch_returns_ok(self):
         """
         1. Создадим партию
         2. Создаем товарную позицию
@@ -106,7 +105,7 @@ class TestDeallocateBatches:
         batch.deallocate(line)
         assert batch.available_quantity == 20
 
-    def test_deallocate_non_exist_line_in_batch_return_false(self):
+    def test_deallocate_non_exist_line_in_batch_returns_ok(self):
         """
         1. Создадим партию
         2. Создаем товарную позицию

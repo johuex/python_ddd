@@ -23,10 +23,10 @@ def allocate(orderid: str, sku: str, qty: int, uow: unit_of_work.AbstractUnitOfW
     """
     line = OrderLine(orderid, sku, qty)
     with uow:
-        batches = uow.batches.list()
-        if not is_valid_sku(line.sku, batches):
+        product = uow.products.get(line.sku)
+        if product is None:
             raise InvalidSku(line.sku)
-        batchref = domain_models.allocate(line, batches)
+        batchref = product.allocate(line)
         uow.commit()
 
     return batchref
@@ -35,10 +35,10 @@ def allocate(orderid: str, sku: str, qty: int, uow: unit_of_work.AbstractUnitOfW
 def deallocate(orderid: str, sku: str, qty: int, uow: unit_of_work.AbstractUnitOfWork) -> str:
     line = OrderLine(orderid, sku, qty)
     with uow:
-        batches = uow.batches.list()
-        if not is_valid_sku(line.sku, batches):
+        product = uow.products.get(line.sku)
+        if product is None:
             raise InvalidSku(line.sku)
-        batchref = domain_models.deallocate(line, batches)
+        batchref = product.deallocate(line)
         uow.commit()
 
     return batchref

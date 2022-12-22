@@ -20,10 +20,10 @@ def in_memory_db():
 @pytest.fixture
 def sqlite_session(in_memory_db):
     """
-    Перед созданием соединения к БД SQLite мэтчим domain_models и orm_models между собой, возвращает соединение
+    Перед созданием соединения к БД SQLite мэтчим domain_models и orm_models между собой, возвращает sessionmaker
     """
     start_mappers()
-    yield sessionmaker(bind=in_memory_db)()
+    yield sessionmaker(bind=in_memory_db)
     clear_mappers()
 
 
@@ -41,8 +41,8 @@ def postgres_db():
 @pytest.fixture
 def postgres_session(postgres_db):
     """
-    Перед созданием соединения к БД Postgres мэтчим domain_models и orm_models между собой, возвращает соединение
+    Перед созданием соединения к БД Postgres мэтчим domain_models и orm_models между собой, возвращает sessionmaker
     """
     start_mappers()
-    yield sessionmaker(bind=postgres_db)()
+    yield sessionmaker(bind=postgres_db)
     clear_mappers()

@@ -11,11 +11,11 @@ class AbstractRepository(abc.ABC):
     Абстрактный класс-родитель для последующих репозиториев ниже
     """
     @abc.abstractmethod
-    def add(self, batch: domain_models.Batch):
+    def add(self, product: domain_models.Product):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get(self, reference) -> domain_models.Batch:
+    def get(self, sku) -> domain_models.Product:
         raise NotImplementedError
 
 
@@ -26,17 +26,12 @@ class SqlAlchemyRepository(AbstractRepository):
     def __init__(self, session: Session):
         self.session = session
 
-    def add(self, batch: domain_models.Batch):
-        self.session.add(batch)
+    def add(self, product: domain_models.Product):
+        self.session.add(product)
 
-    def get(self, reference) -> domain_models.Batch:
+    def get(self, sku) -> domain_models.Product:
         res = self.session.execute(
-            select(domain_models.Batch).where(domain_models.Batch.reference == reference)
-        ).scalar_one_or_none()
+            select(domain_models.Product).where(domain_models.Product.sku == sku)
+        ).scalars().first()
 
-        return res
-
-    def list(self):
-        res_ = self.session.execute(select(domain_models.Batch)).fetchall()
-        res = [i[0] for i in res_]  # from raw to model
         return res

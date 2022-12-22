@@ -79,31 +79,42 @@ class Batch:
             self._allocations.add(line)
 
     def deallocate(self, line: OrderLine):
-        if self.can_deallocate:
+        if self.can_deallocate(line):
             self._allocations.remove(line)
 
 
-def allocate(line: OrderLine, batches: List[Batch]) -> str:
+class Product:
     """
-    Автономная функция для службы предметной области;
-    Служба предметной области
+    Агрегат, все партии с определенным артикулом
     """
-    try:
-        batch = next(
-            b for b in sorted(batches) if b.can_allocate(line)
-        )
-        batch.allocate(line)
-        return batch.reference
-    except StopIteration:
-        raise OutOfStock(f"Out of stock for sku {line.sku}")
+    def __init__(self, sku: str, batches: List[Batch], version: int = 0):
+        self.sku = sku  # идентифицирует каждый "продукт"
+        self.batches = batches  # все партии этого артикула
+        self.version = version  # UUID can be there instead of counter
 
+    def allocate(self, line: OrderLine) -> str:
+        """
+        Автономная функция для службы предметной области;
+        Служба предметной области
+        Размещение товара в одной из партий
+        """
+        try:
+            batch = next(
+                b for b in sorted(self.batches) if b.can_allocate(line)
+            )
+            batch.allocate(line)
+            self.version += 1
+            return batch.reference
+        except StopIteration:
+            raise OutOfStock(f"Out of stock for sku {line.sku}")
 
-def deallocate(line: OrderLine, batches: List[Batch]) -> str:
-    try:
-        batch = next(
-            b for b in sorted(batches) if b.can_deallocate(line)
-        )
-        batch.deallocate(line)
-        return batch.reference
-    except StopIteration:
-        raise NoOrderInBatch(line.orderid, line.sku, [b.sku for b in batches])
+    def deallocate(self, line: OrderLine) -> str:
+        try:
+            batch = next(
+                b for b in sorted(self.batches) if b.can_deallocate(line)
+            )
+            batch.deallocate(line)
+            self.version -= 1
+            return batch.reference
+        except StopIteration:
+            raise NoOrderInBatch(line.orderid, line.sku, [b.sku for b in self.batches])

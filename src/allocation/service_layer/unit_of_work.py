@@ -7,11 +7,14 @@ from src.allocation import config
 from src.allocation.adapters import repository
 
 
-DEFAULT_SESSION_FACTORY = sessionmaker(bind=create_engine(config.get_postgres_uri(), ))
+DEFAULT_SESSION_FACTORY = sessionmaker(bind=create_engine(
+    config.get_postgres_uri(),
+    isolation_level="REPEATABLE READ"  # уровень изолированности транзакции
+))
 
 
 class AbstractUnitOfWork(abc.ABC):
-    batches: repository.AbstractRepository # access to batch in repo
+    products: repository.AbstractRepository  # access to product (bathes with required sku) in repo
 
     # for contextmanager style
     def __enter__(self, *args):
@@ -35,7 +38,7 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
 
     def __enter__(self):  # on contextmanager entry; connecting to db and creating copy of real repo
         self.session = self.session_factory()  # type sqla.Session
-        self.batches = repository.SqlAlchemyRepository(self.session)
+        self.products = repository.SqlAlchemyRepository(self.session)
         return super().__enter__()
 
     def __exit__(self, *args): # on contextmanager exit; close session
