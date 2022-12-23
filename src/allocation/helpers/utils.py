@@ -2,6 +2,7 @@ import time
 import uuid
 
 from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm import sessionmaker
 
 
 def random_suffix():
@@ -24,7 +25,8 @@ def wait_for_postgres_to_come_up(engine):
     deadline = time.time() + 10
     while time.time() < deadline:
         try:
-            return engine.connect()
+            sessionmaker(bind=engine)  # соединяемся с БД
+            return engine
         except OperationalError:
             time.sleep(0.5)
     raise Exception("Postgres never came up")

@@ -104,11 +104,10 @@ class TestUoW:
         rows = list(new_session.execute('SELECT * FROM "batches"'))
         assert rows == []
 
-    @pytest.mark.skip(reason="troubles with docker")
     def test_concurrent_updates_to_version_are_not_allowed_returns_ok(self, postgres_session):
         sku, batch = random_sku(), random_batchref()
         session = postgres_session()
-        insert_batch(session, batch, sku, 100, eta=None, product_version=1)
+        insert_batch(session, batch, sku, 100, eta=None, version=1)
         session.commit()
 
         order1, order2 = random_orderid(1), random_orderid(2)
@@ -122,8 +121,9 @@ class TestUoW:
         thread1.join()
         thread2.join()
 
+        # [[]] - unpack value from 2-n dimensional list
         [[version]] = session.execute(
-            "SELECT version_number FROM products WHERE sku=:sku",
+            "SELECT version FROM products WHERE sku=:sku",
             dict(sku=sku),
         )
         assert version == 2  # проверяем, что только одна транзакция изменила версию

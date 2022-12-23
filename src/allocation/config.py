@@ -3,7 +3,7 @@ def get_postgres_uri():
     host = "localhost"
     port = 5432
     password = "123456"
-    user, db_name = "dev", "default"
+    user, db_name = "dev", "dev_test"
     return f"postgresql://{user}:{password}@{host}:{port}/{db_name}"
 
 

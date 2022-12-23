@@ -5,7 +5,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: docker/Dockerfile
     depends_on:
       - postgres
     environment:
@@ -28,10 +28,14 @@ services:
 
   # db container
   postgres:
-    image: postgres:15-alpine
+    build:
+      context: docker
+      dockerfile: Dockerfile-db
     environment:
       - POSTGRES_USER=dev
       - POSTGRES_PASSWORD=123456
+      - POSTGRES_DB_NAME=dev_test
+      - POSTGRES_SCHEMA_NAME=public
     ports:
       - "5432:5432"
     deploy:

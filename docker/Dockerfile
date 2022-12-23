@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-COPY requirements.txt  /tmp/
+COPY ../requirements.txt  /tmp/
 RUN pip install -r /tmp/requirements.txt
 RUN rm /tmp/requirements.txt
 

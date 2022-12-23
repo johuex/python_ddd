@@ -5,6 +5,7 @@ from src.allocation.models import domain_models
 
 mapper_registry = registry()
 metadata = mapper_registry.metadata
+metadata.schema = "public"
 
 order_lines = Table(
     "order_lines",
