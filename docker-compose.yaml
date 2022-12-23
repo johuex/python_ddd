@@ -1,5 +1,7 @@
 version: "3.8"
+
 services:
+  # api container
   api:
     build:
       context: .
@@ -9,6 +11,10 @@ services:
     environment:
       - DB_HOST=postgres
       - DB_PASSWORD=123456
+    # чтобы не передеплоить каждый раз контейнер, если были изменения в коде
+    volumes:
+      - ./src:/src
+      - ./tests:/tests
     ports:
       - "8000:8000"
     deploy:
@@ -20,6 +26,7 @@ services:
           cpus: '0.25'
           memory: 128M
 
+  # db container
   postgres:
     image: postgres:15-alpine
     environment:
