@@ -7,8 +7,7 @@ from src.allocation.models.api_models.assertion_api_models import (
     DELETEAllocateRequest
 )
 from src.allocation.service_layer import allocate_service, unit_of_work
-from src.allocation.adapters import repository
-from src.allocation.models import domain_models
+from src.allocation.models.exceptions import InvalidSku
 
 router = APIRouter(prefix='/allocate')
 
@@ -22,8 +21,8 @@ async def post_allocate_api(order_line: POSTAllocateRequest):
             order_line.qty,
             unit_of_work.SqlAlchemyUnitOfWork()
         )  # передаем полномочия на службу
-    except domain_models.OutOfStock as e:
-        return HTTPException(status_code=400, detail=str(e))
+    except InvalidSku as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     return {'batchref': batchref}
 
@@ -37,7 +36,7 @@ async def delete_allocate_api(order_line: DELETEAllocateRequest):
             order_line.qty,
             unit_of_work.SqlAlchemyUnitOfWork()
         )  # передаем полномочия на службу
-    except domain_models.NoOrderInBatch as e:
-        return HTTPException(status_code=400, detail=str(e))
+    except InvalidSku as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     return {'batchref': batchref}

@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 import requests
 
-from src.allocation import config
+from src.allocation.core import config
 from src.allocation.helpers.utils import random_sku, random_batchref, random_orderid
 
 
@@ -21,10 +21,9 @@ def post_to_add_batch(ref: str, sku: str, qty: int, eta: Any):
     assert r.status_code == 200
 
 
-@pytest.mark.skip(reason="problems with docker")
 class TestApiPostAllocation:
     """allocate line to batch by entrypoints tests"""
-    def test_happy_path_returns_200_and_allocated_batch(self):
+    def test_happy_path_returns_200_and_allocated_batch(self, postgres_db):
         """
         1. Создаем три партии + записываем их в БД
         2. Через API размещаем позицию на 3 шт
@@ -46,7 +45,7 @@ class TestApiPostAllocation:
         assert res.status_code == 200
         assert res.json()["batchref"] == earlybatch
 
-    def test_unhappy_path_returns_400_and_error_message(self):
+    def test_unhappy_path_returns_400_and_error_message(self, postgres_db):
         """
         1. Создаем товарную позицию
         2. Пробуем разместить ее в несуществующей партии (тк она не создана)
@@ -58,14 +57,13 @@ class TestApiPostAllocation:
         res = requests.post(_baseurl, json=data)
 
         assert res.status_code == 400
-        assert res.json()["detail"] == f"Invalid sku {unknown_sku}"
+        assert res.json()["detail"] == f"Invalid stock-keeping: {unknown_sku}"
 
 
-@pytest.mark.skip(reason="problems with docker")
 class TestApiDeleteAllocation:
     """deallocate line to batch by entrypoints tests"""
 
-    def test_happy_path_returns_200_and_deallocated_batch(self):
+    def test_happy_path_returns_200_and_deallocated_batch(self, postgres_db):
         """
         1. Создаем три партии + записываем их в БД
         2. Через API размещаем позицию на 3 шт
@@ -94,7 +92,7 @@ class TestApiDeleteAllocation:
         assert res_2.json()["batchref"] == earlybatch
         # TODO тут бы еще проверять кол-во в партии, что оно верно
 
-    def test_deallocate_order_in_clean_batch_return_false(self):
+    def test_deallocate_order_in_clean_batch_return_false(self, postgres_db):
         """
         1. Создаем партию
         2. Создаем товарную позицию
@@ -111,4 +109,4 @@ class TestApiDeleteAllocation:
         res = requests.post(_baseurl, json=data)
 
         assert res.status_code == 400
-        assert res.json()["detail"] == f"No order line {orderid}:{unknown_sku} in batches {batch_sku}"
+        assert res.json()["detail"] == f"Invalid stock-keeping: {unknown_sku}"

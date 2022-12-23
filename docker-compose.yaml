@@ -8,9 +8,8 @@ services:
       dockerfile: docker/Dockerfile
     depends_on:
       - postgres
-    environment:
-      - DB_HOST=postgres
-      - DB_PASSWORD=123456
+    env_file:
+      - ./.env
     # чтобы не передеплоить каждый раз контейнер, если были изменения в коде
     volumes:
       - ./src:/src
@@ -32,7 +31,7 @@ services:
       context: docker
       dockerfile: Dockerfile-db
     environment:
-      - POSTGRES_USER=dev
+      - POSTGRES_USER=dev_user
       - POSTGRES_PASSWORD=123456
       - POSTGRES_DB_NAME=dev_test
       - POSTGRES_SCHEMA_NAME=public
