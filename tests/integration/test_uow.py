@@ -64,7 +64,6 @@ class TestUoW:
         session.commit()
         session.close()
 
-
     def test_uow_can_retrieve_a_batch_and_allocate_to_it_returns_ok(self, postgres_session):
         """
         1. В БД кладем партию
