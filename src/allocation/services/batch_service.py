@@ -4,8 +4,8 @@
 from datetime import date
 from typing import Optional
 
-from src.allocation.models import domain_models
-from src.allocation.service_layer import unit_of_work
+from src.allocation.models import domain
+from src.allocation.services import unit_of_work
 
 
 def add_batch(
@@ -15,7 +15,7 @@ def add_batch(
     with uow:
         product = uow.products.get(sku=sku)
         if product is None:
-            product = domain_models.Product(sku, batches=[])
+            product = domain.Product(sku, batches=[])
             uow.products.add(product)
-        product.batches.append(domain_models.Batch(ref, sku, qty, eta))
+        product.batches.append(domain.Batch(ref, sku, qty, eta))
         uow.commit()

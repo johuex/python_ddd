@@ -1,18 +1,19 @@
 import pytest
 from src.allocation.models import exceptions
-from src.allocation.service_layer import allocate_service, unit_of_work
-from src.allocation.service_layer import batch_service
+from src.allocation.services import allocate_service, unit_of_work
+from src.allocation.services import batch_service
 from src.allocation.adapters import repository
 
 
 class FakeRepository(repository.AbstractRepository):
     def __init__(self, products):
+        super().__init__()
         self._products = set(products)
 
-    def add(self, product):
+    def _add(self, product):
         self._products.add(product)
 
-    def get(self, sku):
+    def _get(self, sku):
         return next((p for p in self._products if p.sku == sku), None)
 
 
@@ -21,7 +22,7 @@ class FakeUnitOfWork(unit_of_work.AbstractUnitOfWork):
         self.products = FakeRepository([])  # collaboration of ouw and repo
         self.committed = False
 
-    def commit(self):
+    def _commit(self):
         self.committed = True
 
     def rollback(self):

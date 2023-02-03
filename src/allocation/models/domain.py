@@ -91,6 +91,7 @@ class Product:
         self.sku = sku  # идентифицирует каждый "продукт"
         self.batches = batches  # все партии этого артикула
         self.version = version  # UUID can be there instead of counter
+        self.events = []  # тип: List[events.Event]
 
     def allocate(self, line: OrderLine) -> str:
         """

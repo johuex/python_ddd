@@ -6,7 +6,7 @@ from src.allocation.models.api_models.assertion_api_models import (
     DELETEAllocateResponse,
     DELETEAllocateRequest
 )
-from src.allocation.service_layer import allocate_service, unit_of_work
+from src.allocation.services import allocate_service, unit_of_work
 from src.allocation.models.exceptions import InvalidSku
 
 router = APIRouter(prefix='/allocate')

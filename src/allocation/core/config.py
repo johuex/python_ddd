@@ -1,6 +1,15 @@
 from pydantic import BaseSettings
 
 
+class TestSettings(BaseSettings):
+    api_url: str
+    port: int = 8000
+
+    class Config:
+        env_file = ".env"
+        env_prefix = "test_"
+
+
 class DatabaseSettings(BaseSettings):
     db_name: str
     user: str
@@ -15,6 +24,7 @@ class DatabaseSettings(BaseSettings):
 
 
 db_settings = DatabaseSettings()
+test_settings = TestSettings()
 
 
 def get_postgres_uri():
@@ -27,6 +37,6 @@ def get_postgres_uri():
 
 
 def get_api_url():
-    host = "localhost"
-    port = 8000
+    host = test_settings.api_url
+    port = test_settings.port
     return f"http://{host}:{port}"

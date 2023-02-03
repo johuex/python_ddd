@@ -1,30 +1,6 @@
 version: "3.8"
 
 services:
-  # api container
-  api:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-    depends_on:
-      - postgres
-    env_file:
-      - ./.env
-    # чтобы не передеплоить каждый раз контейнер, если были изменения в коде
-    volumes:
-      - ./src:/src
-      - ./tests:/tests
-    ports:
-      - "8000:8000"
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 128M
-
   # db container
   postgres:
     build:
@@ -37,6 +13,57 @@ services:
       - POSTGRES_SCHEMA_NAME=public
     ports:
       - "5432:5432"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+  # api container
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    depends_on:
+      - postgres
+    env_file:
+      - ./.env
+    environment:
+      - postgres_host=postgres
+    # чтобы не передеплоить каждый раз контейнер, если были изменения в коде
+    volumes:
+      - ./src:/src
+    ports:
+      - "8000:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+  # pytest container
+  pytest:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile-pytest
+    depends_on:
+      - api
+      - postgres
+    env_file:
+      - ./.env
+    environment:
+      - postgres_host=postgres
+      - test_api_url=api
+    # чтобы не передеплоить каждый раз контейнер, если были изменения в коде
+    volumes:
+      - ./src:/src
+      - ./tests:/tests
     deploy:
       resources:
         limits:

@@ -5,8 +5,8 @@ import traceback
 import pytest
 
 from src.allocation.helpers.utils import random_sku, random_batchref, random_orderid
-from src.allocation.models import domain_models
-from src.allocation.service_layer import unit_of_work
+from src.allocation.models import domain
+from src.allocation.services import unit_of_work
 
 
 def insert_batch(session, ref, sku, qty, eta, version=1):
@@ -37,7 +37,7 @@ def get_allocated_batch_ref(session, orderid, sku):
 
 
 def try_to_allocate(orderid, sku, exceptions):
-    line = domain_models.OrderLine(orderid, sku, 10)
+    line = domain.OrderLine(orderid, sku, 10)
     try:
         with unit_of_work.SqlAlchemyUnitOfWork() as uow:
             product = uow.products.get(sku=sku)
@@ -49,42 +49,58 @@ def try_to_allocate(orderid, sku, exceptions):
         exceptions.append(e)
 
 
+def delete_all_from_db(session):
+    session.execute("delete from allocations;")
+    session.execute("delete from batches;")
+    session.execute("delete from order_lines;")
+    session.execute("delete from products;")
+
+
 class TestUoW:
-    def test_uow_can_retrieve_a_batch_and_allocate_to_it_returns_ok(self, sqlite_session):
+    @pytest.fixture(scope="function", autouse=True)
+    def clear_db_fixture(self, postgres_session):
+        session = postgres_session()
+        delete_all_from_db(session)
+        session.commit()
+        session.close()
+
+
+    def test_uow_can_retrieve_a_batch_and_allocate_to_it_returns_ok(self, postgres_session):
         """
         1. В БД кладем партию
         2. Размещаем в партии товарную позицию
         3. Commit изменения
         ОР: позиция разместилась в партии
         """
-        session = sqlite_session()
+        session = postgres_session()
         insert_batch(session, 'batch1', 'HIPSTER-WORKBENCH', 100, None)
         session.commit()
 
-        uow = unit_of_work.SqlAlchemyUnitOfWork(sqlite_session)
+        uow = unit_of_work.SqlAlchemyUnitOfWork()
         with uow:
             product = uow.products.get(sku='HIPSTER-WORKBENCH')  # access to repo through uow
-            line = domain_models.OrderLine('o1', 'HIPSTER-WORKBENCH', 10)
+            line = domain.OrderLine('o1', 'HIPSTER-WORKBENCH', 10)
             product.allocate(line)
             uow.commit()
         batchref = get_allocated_batch_ref(session, 'o1', 'HIPSTER-WORKBENCH')
+        session.close()
         assert batchref == 'batch1'
 
-    def test_rolls_back_uncommitted_work_by_default_returns_ok(self, sqlite_session):
+    def test_rolls_back_uncommitted_work_by_default_returns_ok(self, postgres_session):
         """
         1. В БД кладем партию без commit'a изменений
         2. Получаем список всех партий
         ОР: партий нет: []
         """
-        uow = unit_of_work.SqlAlchemyUnitOfWork(sqlite_session)
+        uow = unit_of_work.SqlAlchemyUnitOfWork()
         with uow:
             insert_batch(uow.session, 'batch1', 'MEDIUM-PLINTH', 100, None)
 
-        new_session = sqlite_session()
+        new_session = postgres_session()
         rows = list(new_session.execute('SELECT * FROM "batches"'))
         assert rows == []
 
-    def test_rolls_back_on_error_returns_ok(self, sqlite_session):
+    def test_rolls_back_on_error_returns_ok(self, postgres_session):
         """
         1. В БД кладем партию
         2. В пределах UoW вызываем любое исключение
@@ -94,14 +110,15 @@ class TestUoW:
         class SomeException(Exception):
             pass
 
-        uow = unit_of_work.SqlAlchemyUnitOfWork(sqlite_session)
+        uow = unit_of_work.SqlAlchemyUnitOfWork()
         with pytest.raises(SomeException):
             with uow:
                 insert_batch(uow.session, 'batch1', 'LARGE-FORK', 100, None)
                 raise SomeException()
 
-        new_session = sqlite_session()
+        new_session = postgres_session()
         rows = list(new_session.execute('SELECT * FROM "batches"'))
+        new_session.close()
         assert rows == []
 
     def test_concurrent_updates_to_version_are_not_allowed_returns_ok(self, postgres_session):
@@ -137,6 +154,7 @@ class TestUoW:
             " WHERE order_lines.sku=:sku",
             dict(sku=sku),
         )
+        session.close()
         assert orders.rowcount == 1  # проверяем, что в партии разместился только один заказ
         with unit_of_work.SqlAlchemyUnitOfWork() as uow:
             uow.session.execute("select 1")  # вернет один, если есть запись в таблице

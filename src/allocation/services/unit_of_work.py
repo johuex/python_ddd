@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 
 from src.allocation.core import config
 from src.allocation.adapters import repository
-
+from src.allocation.services import messagebus
 
 DEFAULT_SESSION_FACTORY = sessionmaker(bind=create_engine(
     config.get_postgres_uri(),
@@ -23,8 +23,19 @@ class AbstractUnitOfWork(abc.ABC):
     def __exit__(self, *args):  # if only raise Exception
         self.rollback()
 
+    def commit(self):
+        # фиксируем изменения, затем проверяем event'ы у продукта и запускаем их, если требуется
+        self._commit()
+        self.publish_events()
+
+    def publish_events(self):
+        for product in self.products.seen:
+            while product.events:
+                event = product.events.pop(0)
+                messagebus.handle(event)
+
     @abc.abstractmethod
-    def commit(self):  # fix changes in repo
+    def _commit(self):  # fix changes in repo
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -45,7 +56,7 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
         super().__exit__(*args)
         self.session.close()
 
-    def commit(self):
+    def _commit(self):
         self.session.commit()
 
     def rollback(self):

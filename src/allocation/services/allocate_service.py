@@ -3,9 +3,9 @@
 """
 from __future__ import annotations  # TODO узнать для чего это
 
-from src.allocation.models.domain_models import OrderLine
+from src.allocation.models.domain import OrderLine
 from src.allocation.models.exceptions import InvalidSku
-from src.allocation.service_layer import unit_of_work
+from src.allocation.services import unit_of_work
 
 
 def is_valid_sku(sku, batches):

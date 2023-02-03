@@ -1,7 +1,7 @@
-from sqlalchemy import Table, Column, Integer, String, Date, ForeignKey
+from sqlalchemy import Table, Column, Integer, String, Date, ForeignKey, event
 from sqlalchemy.orm import registry, relationship
 
-from src.allocation.models import domain_models
+from src.allocation.models import domain
 
 mapper_registry = registry()
 metadata = mapper_registry.metadata
@@ -47,9 +47,9 @@ def start_mappers():
     """
     Классическое попарное отображение предметной модели на orm модель
     """
-    lines_mapper = mapper_registry.map_imperatively(domain_models.OrderLine, order_lines)
+    lines_mapper = mapper_registry.map_imperatively(domain.OrderLine, order_lines)
     batches_mapper = mapper_registry.map_imperatively(
-        domain_models.Batch,
+        domain.Batch,
         batches,
         properties={
             "_allocations": relationship(
@@ -57,4 +57,10 @@ def start_mappers():
             )
         },
     )
-    mapper_registry.map_imperatively(domain_models.Product, products, properties={"batches": relationship(batches_mapper)})
+    mapper_registry.map_imperatively(domain.Product, products, properties={"batches": relationship(batches_mapper)})
+
+
+@event.listens_for(domain.Product, "load")
+def receive_load(product, _):
+    product.events = []
+

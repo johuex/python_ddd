@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from src.allocation.models.api_models.batches_api_models import POSTBatchesResponse, POSTBatchesRequest
-from src.allocation.service_layer import batch_service, unit_of_work
+from src.allocation.services import batch_service, unit_of_work
 
 router = APIRouter(prefix='/batches')
 
