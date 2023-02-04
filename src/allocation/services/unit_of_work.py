@@ -5,7 +5,6 @@ from sqlalchemy.orm import sessionmaker
 
 from src.allocation.core import config
 from src.allocation.adapters import repository
-from src.allocation.services import messagebus
 
 DEFAULT_SESSION_FACTORY = sessionmaker(bind=create_engine(
     config.get_postgres_uri(),
@@ -26,13 +25,12 @@ class AbstractUnitOfWork(abc.ABC):
     def commit(self):
         # фиксируем изменения, затем проверяем event'ы у продукта и запускаем их, если требуется
         self._commit()
-        self.publish_events()
 
-    def publish_events(self):
+    def collect_new_events(self):
+        # uow collects all events itself
         for product in self.products.seen:
             while product.events:
-                event = product.events.pop(0)
-                messagebus.handle(event)
+                yield product.events.pop(0)
 
     @abc.abstractmethod
     def _commit(self):  # fix changes in repo

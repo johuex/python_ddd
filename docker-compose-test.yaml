@@ -46,3 +46,29 @@ services:
         reservations:
           cpus: '0.25'
           memory: 128M
+
+  # pytest container
+  pytest:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile-pytest
+    depends_on:
+      - api
+      - postgres
+    env_file:
+      - ./.env
+    environment:
+      - postgres_host=postgres
+      - test_api_url=api
+    # чтобы не передеплоить каждый раз контейнер, если были изменения в коде
+    volumes:
+      - ./src:/src
+      - ./tests:/tests
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M

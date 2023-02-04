@@ -1,7 +1,6 @@
 import pytest
-from src.allocation.models import exceptions
-from src.allocation.services import allocate_service, unit_of_work
-from src.allocation.services import batch_service
+from src.allocation.models import exceptions, events
+from src.allocation.services import handlers, unit_of_work, messagebus
 from src.allocation.adapters import repository
 
 
@@ -36,7 +35,7 @@ class TestServiceAllocation:
         ОР: партия размещена в БД
         """
         uow = FakeUnitOfWork()
-        batch_service.add_batch("b1", "CRUNCHY-ARMCHAIR", 100, None, uow)
+        messagebus.handle(events.BatchCreated("b1", "CRUNCHY-ARMCHAIR", 100, None), uow)
         assert uow.products.get("CRUNCHY-ARMCHAIR") is not None
         assert uow.committed
 
@@ -47,9 +46,9 @@ class TestServiceAllocation:
         ОР: товарная позиция разместилась в партии
         """
         uow = FakeUnitOfWork()
-        batch_service.add_batch("batch1", "COMPLICATED-LAMP", 100, None, uow)
-        result = allocate_service.allocate("o1", "COMPLICATED-LAMP", 10, uow)
-        assert result == "batch1"
+        messagebus.handle(events.BatchCreated("batch1", "COMPLICATED-LAMP", 100, None), uow)
+        result = messagebus.handle(events.AllocationRequired("o1", "COMPLICATED-LAMP", 10), uow)
+        assert result.pop(0) == "batch1"
 
     def test_allocate_errors_for_invalid_sku(self):
         """
@@ -58,10 +57,10 @@ class TestServiceAllocation:
         ОР: Invalid sku NONEXISTENTSKU, товарная позиция не разместилась в партии
         """
         uow = FakeUnitOfWork()
-        batch_service.add_batch("b1", "AREALSKU", 100, None, uow)
+        messagebus.handle(events.BatchCreated("b1", "AREALSKU", 100, None), uow)
 
-        with pytest.raises(allocate_service.InvalidSku, match="Invalid stock-keeping: NONEXISTENTSKU"):
-            allocate_service.allocate("o1", "NONEXISTENTSKU", 10, uow)
+        with pytest.raises(handlers.InvalidSku, match="Invalid stock-keeping: NONEXISTENTSKU"):
+            messagebus.handle(events.AllocationRequired("o1", "NONEXISTENTSKU", 10), uow)
 
     def test_commits(self):
         """
@@ -70,8 +69,8 @@ class TestServiceAllocation:
         ОР: товарная позиция разместилась в партии, изменения committed в сессии
         """
         uow = FakeUnitOfWork()
-        batch_service.add_batch("b1", "OMINOUS-MIRROR", 100, None, uow)
-        allocate_service.allocate("o1", "OMINOUS-MIRROR", 10, uow)
+        messagebus.handle(events.BatchCreated("b1", "OMINOUS-MIRROR", 100, None), uow)
+        messagebus.handle(events.AllocationRequired("o1", "OMINOUS-MIRROR", 10), uow)
         assert uow.committed is True
 
 
@@ -84,12 +83,12 @@ class TestServiceDeallocation:
         ОР: данные из сервисного слоя совпадают с ожидаемым
         """
         uow = FakeUnitOfWork()
-        batch_service.add_batch("b1", "COMPLICATED-LAMP", 100, None, uow)
-        result = allocate_service.allocate("o1", "COMPLICATED-LAMP", 10, uow)
+        messagebus.handle(events.BatchCreated("b1", "COMPLICATED-LAMP", 100, None), uow)
+        result = messagebus.handle(events.AllocationRequired("o1", "COMPLICATED-LAMP", 10), uow)
 
-        assert result == "b1"
-        result_2 = allocate_service.deallocate("o1", "COMPLICATED-LAMP", 10, uow)
-        assert result_2 == "b1"
+        assert result.pop(0) == "b1"
+        result_2 = messagebus.handle(events.DeAllocationRequired("o1", "COMPLICATED-LAMP", 10), uow)
+        assert result_2.pop(0) == "b1"
 
     def test_error_for_invalid_sku_allocation(self):
         """
@@ -99,11 +98,11 @@ class TestServiceDeallocation:
         ОР: получаем ошибку, что нет такой партии
         """
         uow = FakeUnitOfWork()
-        batch_service.add_batch("b1", "COMPLICATED-LAMP", 100, None, uow)
+        messagebus.handle(events.BatchCreated("b1", "COMPLICATED-LAMP", 100, None), uow)
         with pytest.raises(exceptions.InvalidSku, match="Invalid stock-keeping: NONEXISTENTSKU"):
-            allocate_service.deallocate("o1", "NONEXISTENTSKU", 10, uow)
+            messagebus.handle(events.AllocationRequired("o1", "NONEXISTENTSKU", 10), uow)
         with pytest.raises(
                 exceptions.NoOrderInBatch,
                 #match=f"No order line o1:COMPLICATED-LAMP in batches ['COMPLICATED-LAMP']"
         ):
-            allocate_service.deallocate("o1", "COMPLICATED-LAMP", 10, uow)
+            messagebus.handle(events.DeAllocationRequired("o1", "COMPLICATED-LAMP", 10), uow)

@@ -1,19 +1,23 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Response
 
+from src.allocation.models import events
 from src.allocation.models.api_models.batches_api_models import POSTBatchesResponse, POSTBatchesRequest
-from src.allocation.services import batch_service, unit_of_work
+from src.allocation.services import unit_of_work, messagebus
 
 router = APIRouter(prefix='/batches')
 
 
-@router.post("/", response_model=POSTBatchesResponse)
+@router.post("/")
 async def post_allocate_api(new_batch: POSTBatchesRequest):
-    batch_service.add_batch(
-        new_batch.ref,
-        new_batch.sku,
-        new_batch.qty,
-        new_batch.eta,
-        unit_of_work.SqlAlchemyUnitOfWork()
-    )  # передаем полномочия на службу
+    try:
+        event = events.BatchCreated(
+            ref=new_batch.ref,
+            sku=new_batch.sku,
+            qty=new_batch.qty,
+            eta=new_batch.eta,
+        )
+        messagebus.handle(event, unit_of_work.SqlAlchemyUnitOfWork())
+    except Exception:
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
-    return new_batch
+    return {}

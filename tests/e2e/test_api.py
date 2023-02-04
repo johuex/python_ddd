@@ -3,7 +3,6 @@ E2E (сквозные) тесты для API
 """
 from typing import Any
 
-import pytest
 import requests
 
 from src.allocation.core import config
