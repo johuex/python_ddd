@@ -32,3 +32,9 @@ class DeAllocationRequired(Event):
     order_id: str
     sku: str
     qty: int
+
+
+@dataclass
+class BatchQuantityChanged(Event):
+    ref: str
+    qty: int

@@ -57,3 +57,10 @@ def deallocate(event: events.DeAllocationRequired, uow: unit_of_work.AbstractUni
 
 def send_out_of_stock_notification(event: events.OutOfStock):
     email.send_email('stock@made.com', f'Article {event.sku} is out of stock',)
+
+
+def change_batch_quantity(event: events.BatchQuantityChanged, uow: unit_of_work.AbstractUnitOfWork):
+    with uow:
+        product = uow.products.get_by_batchref(batchref=event.ref)
+        product.change_batch_quantity(ref=event.ref, qty=event.qty)
+        uow.commit()

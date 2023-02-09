@@ -23,7 +23,7 @@ async def post_allocate_api(order_line: POSTAllocateRequest):
             qty=order_line.qty,
         )
         # send it to messagebus and wait for result
-        result = messagebus.handle(event, unit_of_work.SqlAlchemyUnitOfWork())
+        result = messagebus.MessageBus().handle(event, unit_of_work.SqlAlchemyUnitOfWork())
     except InvalidSku as e:
         raise HTTPException(status_code=400, detail=str(e))
     return {'batchref': result.pop(0)}
@@ -37,7 +37,7 @@ async def delete_allocate_api(order_line: DELETEAllocateRequest):
             sku=order_line.sku,
             qty=order_line.qty,
         )
-        result = messagebus.handle(event, unit_of_work.SqlAlchemyUnitOfWork())
+        result = messagebus.MessageBus().handle(event, unit_of_work.SqlAlchemyUnitOfWork())
     except InvalidSku as e:
         raise HTTPException(status_code=400, detail=str(e))
     return {'batchref': result.pop(0)}

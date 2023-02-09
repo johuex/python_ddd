@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Optional, List
 
+from src.allocation.models import events
 from src.allocation.models.exceptions import NoOrderInBatch, OutOfStock
 
 
@@ -82,6 +83,8 @@ class Batch:
         if self.can_deallocate(line):
             self._allocations.remove(line)
 
+    def deallocate_random_one(self) -> OrderLine:
+        return self._allocations.pop()
 
 class Product:
     """
@@ -119,3 +122,13 @@ class Product:
             return batch.reference
         except StopIteration:
             raise NoOrderInBatch(line.orderid, line.sku, [b.sku for b in self.batches])
+
+    def change_batch_quantity(self, ref: str, qty: int):
+        batch = next(b for b in self.batches if b.reference == ref)
+        batch._purchased_quantity = qty
+        while batch.available_quantity < 0:
+            line = batch.deallocate_random_one()
+            # trying to allocate deallocated order in new batch
+            self.events.append(
+                events.AllocationRequired(line.orderid, line.sku, line.qty)
+            )

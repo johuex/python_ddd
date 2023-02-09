@@ -23,12 +23,22 @@ class AbstractRepository(abc.ABC):
             self.seen.add(product)
         return product
 
+    def get_by_batchref(self, batchref) -> domain.Product:
+        product = self._get_by_batchref(batchref)
+        if product:
+            self.seen.add(product)
+        return product
+
     @abc.abstractmethod
     def _add(self, product: domain.Product):
         raise NotImplementedError
 
     @abc.abstractmethod
     def _get(self, sku) -> domain.Product:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def _get_by_batchref(self, batchref) -> domain.Product:
         raise NotImplementedError
 
 
@@ -46,6 +56,13 @@ class SqlAlchemyRepository(AbstractRepository):
     def _get(self, sku) -> domain.Product:
         res = self.session.execute(
             select(domain.Product).where(domain.Product.sku == sku)
+        ).scalars().first()
+
+        return res
+
+    def _get_by_batchref(self, batchref) -> domain.Product:
+        res = self.session.execute(
+            select(domain.Product).join(domain.Batch).where(domain.Batch.reference == batchref)
         ).scalars().first()
 
         return res

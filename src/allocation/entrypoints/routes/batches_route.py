@@ -16,7 +16,7 @@ async def post_allocate_api(new_batch: POSTBatchesRequest):
             qty=new_batch.qty,
             eta=new_batch.eta,
         )
-        messagebus.handle(event, unit_of_work.SqlAlchemyUnitOfWork())
+        messagebus.MessageBus().handle(event, unit_of_work.SqlAlchemyUnitOfWork())
     except Exception:
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
