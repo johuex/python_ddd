@@ -22,6 +22,20 @@ services:
           cpus: '0.25'
           memory: 128M
 
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    restart: on-failure
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
   # api container
   api:
     build:
@@ -29,15 +43,17 @@ services:
       dockerfile: docker/Dockerfile
     depends_on:
       - postgres
+      - redis
     env_file:
       - ./.env
     environment:
       - postgres_host=postgres
+      - app_redis_url=redis
     # чтобы не передеплоить каждый раз контейнер, если были изменения в коде
     volumes:
       - ./src:/src
-    # ports:
-    #   - "8000:8000"
+    ports:
+      - "8000:8000"
     deploy:
       resources:
         limits:
@@ -54,12 +70,12 @@ services:
       dockerfile: docker/Dockerfile-pytest
     depends_on:
       - api
-      - postgres
     env_file:
       - ./.env
     environment:
       - postgres_host=postgres
-      - test_api_url=api
+      - app_api_url=api
+      - app_redis_url=redis
     # чтобы не передеплоить каждый раз контейнер, если были изменения в коде
     volumes:
       - ./src:/src

@@ -1,13 +1,15 @@
 from pydantic import BaseSettings
 
 
-class TestSettings(BaseSettings):
+class AppSettings(BaseSettings):
     api_url: str
-    port: int = 8000
+    api_port: int = 8000
+    redis_url: str
+    redis_port: int = 6379
 
     class Config:
         env_file = ".env"
-        env_prefix = "test_"
+        env_prefix = "app_"
 
 
 class DatabaseSettings(BaseSettings):
@@ -24,7 +26,7 @@ class DatabaseSettings(BaseSettings):
 
 
 db_settings = DatabaseSettings()
-test_settings = TestSettings()
+app_settings = AppSettings()
 
 
 def get_postgres_uri():
@@ -37,6 +39,12 @@ def get_postgres_uri():
 
 
 def get_api_url():
-    host = test_settings.api_url
-    port = test_settings.port
+    host = app_settings.api_url
+    port = app_settings.api_port
     return f"http://{host}:{port}"
+
+
+def get_redis_host_and_port():
+    host = app_settings.redis_url
+    port = app_settings.redis_port
+    return dict(host=host, port=port)

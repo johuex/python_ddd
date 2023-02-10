@@ -38,3 +38,19 @@ class DeAllocationRequired(Event):
 class BatchQuantityChanged(Event):
     ref: str
     qty: int
+
+
+# -- Redis Events
+@dataclass
+class Allocated(Event):
+    order_id: str
+    sku: str
+    qty: int
+    batchref: str
+
+
+@dataclass
+class ToAllocate(Event):
+    order_id: str
+    sku: str
+    qty: int

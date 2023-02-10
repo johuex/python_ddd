@@ -4,6 +4,7 @@
 from __future__ import annotations  # TODO узнать для чего это
 
 from src.allocation.adapters import email
+from src.allocation.entrypoints import redis as redis_entrypoint
 from src.allocation.models import domain
 from src.allocation.models import events
 from src.allocation.models.exceptions import InvalidSku
@@ -64,3 +65,7 @@ def change_batch_quantity(event: events.BatchQuantityChanged, uow: unit_of_work.
         product = uow.products.get_by_batchref(batchref=event.ref)
         product.change_batch_quantity(ref=event.ref, qty=event.qty)
         uow.commit()
+
+
+def publish_allocated_event(event: events.Allocated, uow: unit_of_work.AbstractUnitOfWork):
+    redis_entrypoint.publish('line_allocated', event)

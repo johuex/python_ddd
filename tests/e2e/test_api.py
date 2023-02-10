@@ -7,17 +7,9 @@ import requests
 
 from src.allocation.core import config
 from src.allocation.helpers.utils import random_sku, random_batchref, random_orderid
-
+from tests.e2e import api_client
 
 _baseurl = f"{config.get_api_url()}/allocate"
-
-
-def post_to_add_batch(ref: str, sku: str, qty: int, eta: Any):
-    url = config.get_api_url()
-    r = requests.post(
-        f"{url}/batches", json={"ref": ref, "sku": sku, "qty": qty, "eta": eta}
-    )
-    assert r.status_code == 200
 
 
 class TestApiPostAllocation:
@@ -32,9 +24,9 @@ class TestApiPostAllocation:
         earlybatch = random_batchref(1)
         laterbatch = random_batchref(2)
         otherbatch = random_batchref(3)
-        post_to_add_batch(laterbatch, sku, 100, "2011-01-02")
-        post_to_add_batch(earlybatch, sku, 100, "2011-01-01")
-        post_to_add_batch(otherbatch, othersku, 100, None)
+        api_client.post_to_add_batch(laterbatch, sku, 100, "2011-01-02")
+        api_client.post_to_add_batch(earlybatch, sku, 100, "2011-01-01")
+        api_client.post_to_add_batch(otherbatch, othersku, 100, None)
         data = {
             "orderid": random_orderid(), "sku": sku, "qty": 3
         }
@@ -73,9 +65,9 @@ class TestApiDeleteAllocation:
         earlybatch = random_batchref(1)
         laterbatch = random_batchref(2)
         otherbatch = random_batchref(3)
-        post_to_add_batch(laterbatch, sku, 100, "2011-01-02")
-        post_to_add_batch(earlybatch, sku, 100, "2011-01-01")
-        post_to_add_batch(otherbatch, othersku, 100, None)
+        api_client.post_to_add_batch(laterbatch, sku, 100, "2011-01-02")
+        api_client.post_to_add_batch(earlybatch, sku, 100, "2011-01-01")
+        api_client.post_to_add_batch(otherbatch, othersku, 100, None)
         data = {
             "orderid": random_orderid(), "sku": sku, "qty": 3
         }
@@ -100,7 +92,7 @@ class TestApiDeleteAllocation:
         """
         batch_sku = random_sku()
         earlybatch = random_batchref(1)
-        post_to_add_batch(earlybatch, batch_sku, 100, "2011-01-01")
+        api_client.post_to_add_batch(earlybatch, batch_sku, 100, "2011-01-01")
 
         unknown_sku, orderid = random_sku(), random_orderid()
         data = {"orderid": orderid, "sku": unknown_sku, "qty": 20}
