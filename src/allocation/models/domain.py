@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Optional, List
 
-from src.allocation.models import events
+from src.allocation.models import commands
 from src.allocation.models.exceptions import NoOrderInBatch, OutOfStock
 
 
@@ -130,5 +130,5 @@ class Product:
             line = batch.deallocate_random_one()
             # trying to allocate deallocated order in new batch
             self.events.append(
-                events.AllocationRequired(line.orderid, line.sku, line.qty)
+                commands.Allocate(line.orderid, line.sku, line.qty)
             )
