@@ -4,7 +4,7 @@
 from __future__ import annotations  # TODO узнать для чего это
 
 from src.allocation.adapters import email
-from src.allocation.entrypoints import redis as redis_entrypoint
+from src.allocation.entrypoints import redis_mbus as redis_entrypoint
 from src.allocation.models import domain
 from src.allocation.models import events
 from src.allocation.models.exceptions import InvalidSku

@@ -18,8 +18,11 @@ def main():
     orm.start_mappers()
     pubsub = r.pubsub(ignore_subscribe_messages=True)
     pubsub.subscribe('change_batch_quantity')
+    logger.info("Subscribed to change_batch_quantity topic")
     for m in pubsub.listen():
         handle_change_batch_quantity(m)
+        logger.info(f"Message: {m}")
+
 
 
 def handle_change_batch_quantity(m):
@@ -40,3 +43,7 @@ def publish(channel, event: events.Event):
     # TODO can map channel topic with event's name
     logger.debug('publishing: channel=%s, event=%s', channel, event)
     r.publish(channel, json.dumps(asdict(event)))
+
+
+if __name__ == "__main__":
+    main()

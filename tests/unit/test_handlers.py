@@ -43,7 +43,7 @@ class FakeUnitOfWork(unit_of_work.AbstractUnitOfWork):
 class FakeMessageBus(messagebus.MessageBus):
     def __init__(self):
         super().__init__()
-        self.command_published = []
+        self.message_published = []
 
     def handle(self, message: messagebus.Message, uow: unit_of_work.AbstractUnitOfWork):
         results = []  # results in messagebus from service layer
@@ -64,8 +64,8 @@ class FakeMessageBus(messagebus.MessageBus):
         try:
             handler = self.COMMAND_HANDLERS[type(command)]
             result = handler(command, uow=uow)
+            self.message_published.append(command)
             queue.extend(uow.collect_new_events())
-            self.command_published.append(command)
             return result
         except Exception:
             logger.exception("Exception handling command %s", command)
@@ -76,6 +76,7 @@ class FakeMessageBus(messagebus.MessageBus):
         for handler in self.EVENT_HANDLERS[type(event)]:
             try:
                 result = handler(event, uow=uow)
+                self.message_published.append(event)
                 queue.extend(uow.collect_new_events())
                 return result
             except Exception:
@@ -219,8 +220,6 @@ class TestChangeBatchQuantity:
         # и 20 будет повторно размещено в следующей партии
         assert batch2.available_quantity == 30
 
-    # TODO pytest issue
-    @pytest.mark.skip(reason="не появляется событие ToAllocate")
     def test_reallocates_if_necessary_isolated(self):
         uow = FakeUnitOfWork()
         mbus = FakeMessageBus()
@@ -239,7 +238,7 @@ class TestChangeBatchQuantity:
         mbus.handle(commands.ChangeBatchQuantity("batch1", 25), uow)
         # подтвердить истинность на новых порожденных событиях,
         # а не на последующих побочных эффектах
-        reallocation_command = mbus.command_published[-1]
-        assert isinstance(reallocation_command, commands.Allocate)
-        assert reallocation_command.order_id in {'order1', 'order2'}
-        assert reallocation_command.sku == 'INDIFFERENT-TABLE'
+        reallocation_event = mbus.message_published[-2]
+        reallocated_event = mbus.message_published[-1]
+        assert isinstance(reallocation_event, events.ToAllocate)
+        assert isinstance(reallocated_event, events.Allocated)

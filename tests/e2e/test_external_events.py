@@ -24,8 +24,6 @@ def publish_message(channel, message):
 
 
 class TestRedisIntegration:
-    # TODO pytest issue
-    @pytest.mark.skip(reason="не получаем сообщения от redis")
     def test_change_batch_quantity_leading_to_reallocation(self, postgres_db):
         """
         1. Через API создаем две партии
@@ -58,5 +56,5 @@ class TestRedisIntegration:
                     messages.append(message)
                     print(messages)
                 data = json.loads(messages[-1]['data'])
-                assert data['orderid'] == orderid
+                assert data['order_id'] == orderid
                 assert data['batchref'] == later_batch

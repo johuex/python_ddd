@@ -24,8 +24,6 @@ services:
 
   redis:
     image: redis:latest
-    volumes:
-      - redis-data:/opt/app/redis/data
     ports:
       - "6379:6379"
     restart: on-failure
@@ -37,6 +35,29 @@ services:
         reservations:
           cpus: '0.25'
           memory: 128M
+
+  redis-messagebus:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile-redis-mbus
+    depends_on:
+      - redis
+    env_file:
+      - ./.env
+    environment:
+      - postgres_host=postgres
+      - app_redis_url=redis
+    volumes:
+      - ./src:/src
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
 
   # api container
   api:
@@ -51,7 +72,6 @@ services:
     environment:
       - postgres_host=postgres
       - app_redis_url=redis
-    # чтобы не передеплоить каждый раз контейнер, если были изменения в коде
     volumes:
       - ./src:/src
     ports:
