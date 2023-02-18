@@ -10,6 +10,11 @@ from src.allocation.adapters import repository
 from src.allocation.models.exceptions import InvalidSku
 
 
+class FakeSession:
+    def execute(self, *args, **kwargs):
+        pass
+
+
 class FakeRepository(repository.AbstractRepository):
     def __init__(self, products):
         super().__init__()
@@ -29,6 +34,8 @@ class FakeRepository(repository.AbstractRepository):
 
 
 class FakeUnitOfWork(unit_of_work.AbstractUnitOfWork):
+    session = FakeSession
+
     def __init__(self):
         self.products = FakeRepository([])  # collaboration of ouw and repo
         self.committed = False
@@ -43,13 +50,11 @@ class FakeUnitOfWork(unit_of_work.AbstractUnitOfWork):
 class FakeMessageBus(messagebus.AbstractMessageBus):
     EVENT_HANDLERS = {
         events.Allocated: [
-            handlers.publish_allocated_event,
-            handlers.add_allocation_to_read_model
+            handlers.publish_allocated_event
         ],
         events.OutOfStock: [handlers.send_out_of_stock_notification],
         events.ToAllocate: [handlers.allocate],
         events.Deallocated: [
-            handlers.remove_allocation_from_read_model,
             handlers.reallocate
         ]
     }
@@ -260,5 +265,5 @@ class TestChangeBatchQuantity:
         # а не на последующих побочных эффектах
         reallocation_event = mbus.message_published[-2]
         reallocated_event = mbus.message_published[-1]
-        assert isinstance(reallocation_event, events.ToAllocate)
+        assert isinstance(reallocation_event, commands.Allocate)
         assert isinstance(reallocated_event, events.Allocated)
