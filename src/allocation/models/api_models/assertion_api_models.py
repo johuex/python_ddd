@@ -1,3 +1,5 @@
+from typing import List, Dict
+
 from pydantic import BaseModel
 
 
@@ -21,3 +23,11 @@ class DELETEAllocateRequest(OrderLine):
 
 class DELETEAllocateResponse(BaseModel):
     batchref: str
+
+
+class GetOrderAllocationsResponse(BaseModel):
+    allocations: List[Dict[str, str]]
+
+
+class GetAllocationResponse(BaseModel):
+    allocation: Dict[str, str]

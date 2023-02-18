@@ -5,7 +5,7 @@ import pytest
 from loguru import logger
 
 from src.allocation.models import exceptions, events, commands
-from src.allocation.services import unit_of_work, messagebus
+from src.allocation.services import unit_of_work, messagebus, handlers
 from src.allocation.adapters import repository
 from src.allocation.models.exceptions import InvalidSku
 
@@ -40,7 +40,27 @@ class FakeUnitOfWork(unit_of_work.AbstractUnitOfWork):
         pass
 
 
-class FakeMessageBus(messagebus.MessageBus):
+class FakeMessageBus(messagebus.AbstractMessageBus):
+    EVENT_HANDLERS = {
+        events.Allocated: [
+            handlers.publish_allocated_event,
+            handlers.add_allocation_to_read_model
+        ],
+        events.OutOfStock: [handlers.send_out_of_stock_notification],
+        events.ToAllocate: [handlers.allocate],
+        events.Deallocated: [
+            handlers.remove_allocation_from_read_model,
+            handlers.reallocate
+        ]
+    }
+
+    COMMAND_HANDLERS = {
+        commands.Allocate: handlers.allocate,
+        commands.CreateBatch: handlers.add_batch,
+        commands.ChangeBatchQuantity: handlers.change_batch_quantity,
+        commands.Deallocate: handlers.deallocate
+    }
+
     def __init__(self):
         super().__init__()
         self.message_published = []
@@ -72,7 +92,7 @@ class FakeMessageBus(messagebus.MessageBus):
             raise
 
     def handle_event(self, event: events.Event, queue: List[messagebus.Message], uow: unit_of_work.AbstractUnitOfWork):
-        logger.debug("handling event %s", event)
+        logger.debug(f"handling event {event}")
         for handler in self.EVENT_HANDLERS[type(event)]:
             try:
                 result = handler(event, uow=uow)
@@ -80,7 +100,7 @@ class FakeMessageBus(messagebus.MessageBus):
                 queue.extend(uow.collect_new_events())
                 return result
             except Exception:
-                logger.exception("Exception handling event %s", event)
+                logger.exception(f"Exception handling event {event}")
                 raise
 
 

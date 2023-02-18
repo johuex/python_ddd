@@ -54,3 +54,10 @@ class ToAllocate(Event):
     order_id: str
     sku: str
     qty: int
+
+
+@dataclass
+class Deallocated(Event):
+    order_id: str
+    sku: str
+    qty: int

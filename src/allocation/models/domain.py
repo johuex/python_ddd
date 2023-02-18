@@ -133,6 +133,4 @@ class Product:
         while batch.available_quantity < 0:
             line = batch.deallocate_random_one()
             # trying to allocate deallocated order in new batch
-            self.events.append(
-                events.ToAllocate(line.orderid, line.sku, line.qty)
-            )
+            self.events.append(events.Deallocated(line.orderid, line.sku, line.qty))

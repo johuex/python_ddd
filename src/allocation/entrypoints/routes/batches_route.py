@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import ORJSONResponse
 
 from src.allocation.models import commands
 from src.allocation.models.api_models.batches_api_models import POSTBatchesResponse, POSTBatchesRequest
@@ -7,7 +8,7 @@ from src.allocation.services import unit_of_work, messagebus
 router = APIRouter(prefix='/batches')
 
 
-@router.post("/")
+@router.post("")
 async def post_allocate_api(new_batch: POSTBatchesRequest):
     try:
         command = commands.CreateBatch(
@@ -20,4 +21,7 @@ async def post_allocate_api(new_batch: POSTBatchesRequest):
     except Exception:
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-    return {}
+    return ORJSONResponse(
+        content={},
+        status_code=200
+    )

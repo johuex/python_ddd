@@ -31,9 +31,16 @@ class AbstractMessageBus(abc.ABC):
 
 class MessageBus(AbstractMessageBus):
     EVENT_HANDLERS = {
-        events.Allocated: [handlers.publish_allocated_event],
+        events.Allocated: [
+            handlers.publish_allocated_event,
+            handlers.add_allocation_to_read_model
+        ],
         events.OutOfStock: [handlers.send_out_of_stock_notification],
-        events.ToAllocate: [handlers.allocate]
+        events.ToAllocate: [handlers.allocate],
+        events.Deallocated: [
+            handlers.remove_allocation_from_read_model,
+            handlers.reallocate
+        ]
     }
 
     COMMAND_HANDLERS = {
@@ -66,21 +73,21 @@ class MessageBus(AbstractMessageBus):
                     wait=wait_exponential() # exponential timeout between attempts
                 ):
                     with attempt:
-                        logger.debug('handling event %s with handler %s', event, handler)
+                        logger.debug(f'Handling event {event} with handler {handler}')
                         handler(event, uow=uow)
                         queue.extend(uow.collect_new_events())
             except RetryError as retry_failure:
                 # logging error, but not interrupting message processing
-                logger.error('Exception handling event %s', event)
+                logger.error(f'Exception handling event {event}')
                 continue
 
     def handle_command(self, command: commands.Command, queue: List[Message], uow: unit_of_work.AbstractUnitOfWork):
-        logger.debug('handling command %s', command)
+        logger.debug(f'Handling command {command}')
         try:
             handler = self.COMMAND_HANDLERS[type(command)]
             result = handler(command, uow=uow)
             queue.extend(uow.collect_new_events())
             return result  # TODO костыль
         except Exception:
-            logger.error('Exception handling command %s', command)
+            logger.error(f'Exception handling command {command}')
             raise
