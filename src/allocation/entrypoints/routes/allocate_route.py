@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import ORJSONResponse
 
+from src.allocation.bootstrap import bus
 from src.allocation.models import commands
 from src.allocation.models.api_models.assertion_api_models import (
     POSTAllocateResponse,
@@ -8,7 +9,7 @@ from src.allocation.models.api_models.assertion_api_models import (
     DELETEAllocateResponse,
     DELETEAllocateRequest, GetOrderAllocationsResponse, GetAllocationResponse
 )
-from src.allocation.services import unit_of_work, messagebus, views
+from src.allocation.services import views
 from src.allocation.models.exceptions import InvalidSku
 
 router = APIRouter(prefix='/allocate')
@@ -17,7 +18,7 @@ router = APIRouter(prefix='/allocate')
 @router.get("/{order_id}", response_model=GetOrderAllocationsResponse)
 async def get_order_allocations(order_id: str):
     try:
-        uow = unit_of_work.SqlAlchemyUnitOfWork()
+        uow = bus.uow
         result = views.allocations(uow, order_id)
     except Exception:
         raise HTTPException(status_code=500, detail="Internal Server Error")
@@ -37,7 +38,7 @@ async def get_order_allocations(order_id: str):
 @router.get("/{order_id}/{sku}", response_model=GetAllocationResponse)
 async def get_allocation(order_id: str, sku: str):
     try:
-        uow = unit_of_work.SqlAlchemyUnitOfWork()
+        uow = bus.uow
         result = views.allocation(uow, order_id, sku)
     except Exception:
         raise HTTPException(status_code=500, detail="Internal Server Error")
@@ -64,7 +65,7 @@ async def post_allocate_api(order_line: POSTAllocateRequest):
             qty=order_line.qty,
         )
         # send it to messagebus and wait for result
-        result = messagebus.MessageBus().handle(command, unit_of_work.SqlAlchemyUnitOfWork())
+        result = bus.handle(command)
     except InvalidSku as e:
         raise HTTPException(status_code=400, detail=str(e))
     return {'batchref': result.pop(0)}
@@ -78,7 +79,7 @@ async def delete_allocate_api(order_line: DELETEAllocateRequest):
             sku=order_line.sku,
             qty=order_line.qty,
         )
-        result = messagebus.MessageBus().handle(command, unit_of_work.SqlAlchemyUnitOfWork())
+        result = bus.handle(command)
     except InvalidSku as e:
         raise HTTPException(status_code=400, detail=str(e))
     return {'batchref': result.pop(0)}

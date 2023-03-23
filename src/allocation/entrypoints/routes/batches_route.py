@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import ORJSONResponse
 
+from src.allocation.bootstrap import bus
 from src.allocation.models import commands
 from src.allocation.models.api_models.batches_api_models import POSTBatchesResponse, POSTBatchesRequest
-from src.allocation.services import unit_of_work, messagebus
 
 router = APIRouter(prefix='/batches')
 
@@ -17,7 +17,7 @@ async def post_allocate_api(new_batch: POSTBatchesRequest):
             qty=new_batch.qty,
             eta=new_batch.eta,
         )
-        messagebus.MessageBus().handle(command, unit_of_work.SqlAlchemyUnitOfWork())
+        bus.handle(command)
     except Exception:
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
