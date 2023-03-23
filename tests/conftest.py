@@ -2,9 +2,11 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, clear_mappers
 
+from src.allocation import bootstrap
 from src.allocation.core import config
 from src.allocation.helpers.utils import wait_for_postgres_to_come_up
 from src.allocation.adapters.orm import metadata, start_mappers
+from tests import fake_services
 
 
 @pytest.fixture
@@ -43,6 +45,24 @@ def postgres_session(postgres_db):
     """
     Перед созданием соединения к БД Postgres мэтчим domain_models и orm_models между собой, возвращает sessionmaker
     """
-    start_mappers()
+    start_mappers()  # из-за bus = bootstrap() в bootstrap
     yield sessionmaker(bind=postgres_db)
     clear_mappers()
+
+
+@pytest.fixture(scope="function")
+def fake_bus():
+    mbus = bootstrap.bootstrap(
+        start_orm=False,
+        uow=fake_services.FakeUnitOfWork(),
+        message_bus=fake_services.FakeMessageBus
+    )
+    yield mbus
+
+
+@pytest.fixture(scope="function")
+def real_bus(postgres_session):
+    mbus = bootstrap.bootstrap(
+        start_orm=False,
+    )
+    yield mbus

@@ -6,6 +6,7 @@ class AppSettings(BaseSettings):
     api_port: int = 8000
     redis_url: str
     redis_port: int = 6379
+    bus_init_need: bool = True
 
     class Config:
         env_file = ".env"

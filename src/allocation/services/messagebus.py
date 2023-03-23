@@ -10,7 +10,6 @@ from src.allocation.services import unit_of_work
 
 
 class AbstractMessageBus(abc.ABC):
-    # a predefined list of not injected handlers and command for each type of messagebus
     def __init__(
         self,
         uow: unit_of_work.AbstractUnitOfWork,
@@ -39,7 +38,6 @@ class AbstractMessageBus(abc.ABC):
 
 class MessageBus(AbstractMessageBus):
     def handle(self, message: Message):
-        # Now UoW goes through the message bus on every uow start
         results = []  # results in messagebus from service layer
         queue = [message]  # start queue on first event
         while queue:

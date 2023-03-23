@@ -6,4 +6,4 @@ RUN rm /tmp/requirements.txt
 
 ENV PYTHONPATH /
 
-CMD python /src/allocation/entrypoints/redis_mbus.py
+CMD python /src/allocation/entrypoints/redis_event_consumer.py

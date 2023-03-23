@@ -1,6 +1,5 @@
 import json
 
-import pytest
 import redis
 from tenacity import Retrying, stop_after_delay
 

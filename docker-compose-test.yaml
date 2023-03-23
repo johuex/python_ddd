@@ -13,6 +13,11 @@ services:
       - POSTGRES_SCHEMA_NAME=public
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     deploy:
       resources:
         limits:
@@ -91,13 +96,17 @@ services:
       context: .
       dockerfile: docker/Dockerfile-pytest
     depends_on:
-      - api
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_started
     env_file:
       - ./.env
     environment:
       - postgres_host=postgres
       - app_api_url=api
       - app_redis_url=redis
+      - app_bus_init_need=False
     volumes:
       - ./src:/src
       - ./tests:/tests
